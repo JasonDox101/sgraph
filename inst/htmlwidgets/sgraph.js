@@ -9,6 +9,11 @@ customDrawLabel = function(
   if (drawFrame === undefined) {
       drawFrame = true;
   }
+  
+  // 如果是单行模式且节点颜色为灰色(#eee)，则不绘制标签
+  if (singleLine && data.color === '#eee') {
+    return;
+  }
 
   const size = settings.labelSize,
     font = settings.labelFont,
@@ -24,13 +29,20 @@ customDrawLabel = function(
   context.font = `${weight} ${size}px ${font}`;
 
   var lines = data.label.split("\n");
+  // 如果是悬停状态且有ID信息，添加ID到显示内容中
+  if (!singleLine && data.key) {
+    lines.push("ID: " + data.key);
+  }
+  var shortlines = lines.map(function(line) {
+    return line.length >= 4 ? line.substring(0, 4) : line;
+  });
   var lineHeight = size;
   var y = data.y + size / 3;
   if (singleLine) {
     if (drawFrame) {
         customDrawHover(context, data, settings, true);
     }
-    context.fillText(lines[0], data.x + data.size + 3, y);
+    context.fillText(shortlines[0], data.x + data.size + 3, y);
   } else {
     for (var i = 0; i < lines.length; i++) {
       context.fillText(lines[i], data.x + data.size + 3, y);
@@ -63,8 +75,30 @@ customDrawHover = function (
     const PADDING = 3;
   
     if (typeof data.label === "string") {
-      var textWidth = context.measureText(data.label).width,
-        boxWidth = Math.round(textWidth + 5),
+      var lines = data.label.split("\n");
+      // 如果是悬停状态且有ID信息，添加ID到显示内容中
+      if (!singleLine && data.key) {
+        lines.push("ID: " + data.key);
+      }
+      var displayLines = lines;
+      
+      // 如果是单行模式（非悬停状态），使用缩写文本计算宽度
+      if (singleLine) {
+        displayLines = lines.slice(0, 1);
+        // 创建缩写版本用于计算宽度
+        var shortLine = displayLines[0].length >= 4 ? displayLines[0].substring(0, 4) : displayLines[0];
+        var textWidth = context.measureText(shortLine).width;
+      } else {
+        // 悬停状态，使用完整文本
+        var textWidth = context.measureText(lines[0]).width;
+        for (var i = 1; i < lines.length; i++) {
+          if (context.measureText(lines[i]).width > textWidth) {
+            textWidth = context.measureText(lines[i]).width;
+          }
+        }
+      }
+      
+      var boxWidth = Math.round(textWidth + 5),
         boxHeight = Math.round(size + 2 * PADDING),
         radius = Math.max(data.size, size / 2) + PADDING;
   
@@ -73,25 +107,11 @@ customDrawHover = function (
         Math.abs(Math.pow(radius, 2) - Math.pow(boxHeight / 2, 2))
       );
 
-    var lines = data.label.split("\n");
-        if (singleLine) {
-            lines = lines.slice(0, 1);
-        }
-    //boxHeight = boxHeight * lines.length;
-        
-    //boxWidth = lines.forEach(function(line) { 
-    //    this.measureText(line).width
-    //})
-  boxWidth = context.measureText(lines[0]).width
-  for (var i = 1; i < lines.length; i++) {
-      if (context.measureText(lines[i]).width > boxWidth) {
-        boxWidth = context.measureText(lines[i]).width
+      // 如果是单行模式，只保留第一行
+      if (singleLine) {
+        lines = lines.slice(0, 1);
       }
-  }
-        boxWidth = Math.round(boxWidth + 5);
-
-       //if (singleLine) xDeltaCoord = 0;
-  
+        
       context.beginPath();
       context.moveTo(data.x + xDeltaCoord, data.y + boxHeight / 2 + Math.round(size + PADDING) * (lines.length - 1));
       context.lineTo(data.x + radius + boxWidth, data.y + boxHeight / 2 + Math.round(size + PADDING) * (lines.length - 1));
@@ -153,6 +173,21 @@ HTMLWidgets.widget({
 
         //s.setSetting('labelColor', x.options.labelColor);
         s.setSetting('labelGridCellSize', x.options.label_grid_cell_size);
+        
+        // 根据 label_grid_cell_size 动态计算字体大小
+        let calculatedLabelSize = x.options.label_size;
+        if (x.options.label_grid_cell_size) {
+          // 线性插值计算字体大小：
+          const baseSize = 9;
+          const baseGrid = 100;
+          const scaleFactor = 7; // 控制增长速度
+          // 对数计算，使大值增长变缓，小值减小更平滑
+          calculatedLabelSize = baseSize + scaleFactor * Math.log10(x.options.label_grid_cell_size / baseGrid);
+          
+          // 确保字体大小在合理范围内
+          calculatedLabelSize = Math.max(7, Math.min(calculatedLabelSize, 20));
+        }
+        s.setSetting('labelSize', calculatedLabelSize);
         s.setSetting('minEdgeSize', x.options.min_edge_size);
         s.setSetting('maxEdgeSize', x.options.max_edge_size);
         s.setSetting('minNodeSize', x.options.min_node_size);
