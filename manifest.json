@@ -1580,7 +1580,7 @@
         "License": "GPL-3",
         "Encoding": "UTF-8",
         "RoxygenNote": "7.3.1",
-        "URL": "https://github.com/JasonDox101/sgraph",
+        "URL": "https://gitlab.com/thomaschln/sgraph",
         "BugReports": "https://gitlab.com/thomaschln/sgraph/-/issues",
         "LazyData": "true",
         "RemoteType": "github",
