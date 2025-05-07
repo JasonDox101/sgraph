@@ -1,12 +1,7 @@
 ---
 title: "Sgraph交互式网络可视化"
 author: "用户"
-date: "`r Sys.Date()`"
-output: rmarkdown::html_vignette
-vignette: >
-  %\VignetteIndexEntry{Sgraph交互式网络可视化}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
+output: html_document  # 添加静态输出格式
 ---
 
 ```{r setup, include = FALSE}
